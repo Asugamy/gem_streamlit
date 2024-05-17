@@ -3,8 +3,10 @@ import firebase_admin
 from firebase_admin import firestore
 from firebase_admin import credentials
 
-cred = credentials.Certificate('obj_database.json')
-app = firebase_admin.initialize_app(cred)
+if not firebase_admin._apps:
+    cred = credentials.Certificate('obj_database.json')
+    app = firebase_admin.initialize_app(cred)
+    
 db = firestore.client()
 
 
