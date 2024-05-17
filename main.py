@@ -6,7 +6,7 @@ from firebase_admin import credentials
 if not firebase_admin._apps:
     cred = credentials.Certificate('obj_database.json')
     app = firebase_admin.initialize_app(cred)
-    
+
 db = firestore.client()
 
 
@@ -14,6 +14,7 @@ db = firestore.client()
 def authentication(user='', password=''):
     users_db = db.collection("users").stream()
     for user_db in users_db:
+        return user_db.id
         if user == user_db.id and password == user_db.get('senha'): return {'nome':user_db.get('nome'), 'nivel':user_db.get('nivel')}
     return False
 
@@ -171,4 +172,5 @@ def authentication(user='', password=''):
 # truco()
 
 
-st.title('AAAAAAAAAAAAA')
+st.title(authentication())
+print(authentication())
