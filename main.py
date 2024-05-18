@@ -1,175 +1,73 @@
 import streamlit as st
-import firebase_admin
-from firebase_admin import firestore
-from firebase_admin import credentials
+import database as db
 
-if not firebase_admin._apps:
-    cred = credentials.Certificate('obj_database.json')
-    app = firebase_admin.initialize_app(cred)
+# Configurações da Página
+st.set_page_config(
+    layout='wide'
+)
 
-db = firestore.client()
+# CSS
+st.write(
+    '''
+        <style>
+            button[data-baseweb="tab"] {
+                font-size: 24px;
+                margin: 0;
+                width: 100%;
+            }
+        </style>
+    ''',
+    unsafe_allow_html=True
+)
 
+st.markdown("<h1 style='text-align: center;'>GEM Morrinhos</h1>", unsafe_allow_html=True)
 
-# Autenticação
-def authentication(user='', password=''):
-    users_db = db.collection("users").stream()
-    for user_db in users_db:
-        return user_db.id
-        if user == user_db.id and password == user_db.get('senha'): return {'nome':user_db.get('nome'), 'nivel':user_db.get('nivel')}
-    return False
+st.subheader(':violet[Tarefas]')
 
-# #Criar task
-# def add_tasks(instructor, message, type, candidate, user):
-#     #Procurando candidato
-#     user_id= ''
-#     colecs = db.collection('users').get()
-#     for colec in colecs:
-#         name_user = colec.get('nome')
-#         if name_user == candidate:
-#            user_id = colec.id
+tab_aFazer, tab_concluido, tab_corrigido = st.tabs(["A FAZER", "CONCLUÍDO", "CORRIGIDO"])
 
-#     #Adicionando task no candidato
-#     tasks_doc = db.collection("users").document(user_id)
-#     task = tasks_doc.get().to_dict().get('tasks')
-#     task.append(
-#         {
-#             'instrutor':instructor,
-#             'mensagem':message,
-#             'status':'aFazer',
-#             'tipo':type
-#         }
-#     )
-#     tasks_doc.update({'tasks':task})
+#Classe para criar cards
+class Card_task:
+    def __init__(self, id, instrutor, mensagem, tipo, status):
+        self.id = id
+        self.instrutor = instrutor
+        self.mensagem = mensagem
+        self.tipo = tipo
+        self.status = status
+        self.build()
 
-#     # Adicionando task no instrutor
-#     tasks_doc = db.collection("users").document(user)
-#     task = tasks_doc.get().to_dict().get('tasks')
-#     task.append(
-#         {
-#             'instrutor':candidate,
-#             'mensagem':message,
-#             'status':'aFazer',
-#             'tipo':type
-#         }
-#     )
-#     tasks_doc.update({'tasks':task})
+    def build(self):
+        card = st.container(border=True)
+        card.write(f'{self.tipo} - {self.id}')
+        card.write(f'{self.mensagem}')
+        self.btn_card(card)
 
-# # Puxar candidatos
-# def get_candidates():
-#     candidates = []
-#     colecs = db.collection('users').get()
-#     for colec in colecs:
-#         if colec.get('nivel') == 'candidato': candidates.append(colec.get('nome'))
-#     return sorted(candidates)
-        
+    def btn_card(self, card):
+        if self.status == 'aFazer': return card.button('ESTUDEI', use_container_width=True, key=self.id, on_click=self.estudei)
+        elif self.status == 'concluido': return card.button('CANCELAR', use_container_width=True, key=self.id, on_click=self.cancelar)
+        elif self.status == 'confirmado': return None
 
-# #Puxar informações de cards
-# def get_cards(user):
-#     cards = {
-#         'aFazer': [],
-#         'concluido':[],
-#         'corrigido':[]
-#     }
-#     tasks_doc = db.collection("users").document(user)
-#     tasks = tasks_doc.get().to_dict().get('tasks')
-#     i = 0
-#     for task in tasks:
-#         if task['status'] == 'aFazer':
-#             cards['aFazer'].insert(
-#                 0,
-#                 {
-#                     'id':i,
-#                     'instrutor':task['instrutor'],
-#                     'mensagem':task['mensagem'],
-#                     'tipo':task['tipo']
-#                 }
-#             )
-#         elif task['status'] == 'concluido':
-#             cards['concluido'].insert(
-#                 0,
-#                 {
-#                     'id':i,
-#                     'instrutor':task['instrutor'],
-#                     'mensagem':task['mensagem'],
-#                     'tipo':task['tipo']
-#                 }
-#             )
-#         elif task['status'] == 'corrigido':
-#             cards['corrigido'].insert(
-#                 0,
-#                 {
-#                     'id':i,
-#                     'instrutor':task['instrutor'],
-#                     'mensagem':task['mensagem'],
-#                     'tipo':task['tipo']
-#                 }
-#             )
-
-#         i += 1
-#     return cards
-
-# # Concluir task
-# def task_concluded(id, user):
-#     tasks_doc = db.collection("users").document(user)
-#     tasks = tasks_doc.get().to_dict().get('tasks')
-#     tasks[id]['status'] = 'concluido'
-#     tasks_doc.update({'tasks':tasks})
-
-# # Cancelar task concluida
-# def task_inconcluded(id, user):
-#     tasks_doc = db.collection("users").document(user)
-#     tasks = tasks_doc.get().to_dict().get('tasks')
-#     tasks[id]['status'] = 'aFazer'
-#     tasks_doc.update({'tasks':tasks})
-
-# # Corrigir task
-# def task_corrected(id, user):
-#     tasks_doc = db.collection("users").document(user)
-#     tasks = tasks_doc.get().to_dict().get('tasks')
-#     tasks[id]['status'] = 'corrigido'
-#     tasks_doc.update({'tasks':tasks})
-
-# # Cancelar task corrigida
-# def task_incorrected(id, user):
-#     tasks_doc = db.collection("users").document(user)
-#     tasks = tasks_doc.get().to_dict().get('tasks')
-#     tasks[id]['status'] = 'concluido'
-#     tasks_doc.update({'tasks':tasks})
-
-# # Excluir Task
-# def task_delete(id, user):
-#     tasks_doc = db.collection("users").document(user)
-#     tasks = tasks_doc.get().to_dict().get('tasks')
-#     del tasks[id]
-#     tasks_doc.update({'tasks':tasks})
-
-# # Puxar informações de hinos
-# def get_data_hymns(candidate):
-#     forms_doc = db.collection("users").document(candidate).get()
-#     forms = forms_doc.to_dict().get('ficha')['hinos']
-#     return forms
-
-# def truco():
-#     tasks_doc = db.collection("users").document('isaiasvitorslva@gmail.com')
-#     # task = tasks_doc.get().to_dict().get('ficha')
-#     task = []
-#     for i in range(1, 481):
-#         n = ''
-#         if i < 10: n = f'00{i}'
-#         elif i < 100: n = f'0{i}'
-#         else: n = f'{i}'
-#         task.append(
-#             {
-#                 'alternativa':False,
-#                 'numero':n,
-#                 'principal':False,
-#                 'nome': ''
-#             }
-#         )
-
-#     tasks_doc.update({'ficha':{'hinos':task}})
-
-# truco()
+    def estudei(self): db.task_concluded(self.id, 'claudiomarçola@gmail.com')
+    def cancelar(self): db.task_inconcluded(self.id, 'claudiomarçola@gmail.com')
 
 
-st.title(authentication())
+with tab_aFazer:
+    tasks = db.get_cards('claudiomarçola@gmail.com')['aFazer']
+    for task in tasks:
+        Card_task(task['id'], task['instrutor'], task['mensagem'], task['tipo'], 'aFazer')
+with tab_concluido:
+    tasks = db.get_cards('claudiomarçola@gmail.com')['concluido']
+    for task in tasks:
+        Card_task(task['id'], task['instrutor'], task['mensagem'], task['tipo'], 'concluido')
+with tab_corrigido:
+    tasks = db.get_cards('claudiomarçola@gmail.com')['corrigido']
+    for task in tasks:
+        Card_task(task['id'], task['instrutor'], task['mensagem'], task['tipo'], 'corrigido')
+
+
+
+
+
+
+
+
